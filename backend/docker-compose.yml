@@ -10,3 +10,9 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - DEBUG=1
+    networks:
+      - task_net
+
+networks:
+  task_net:
+    name: safaricom_task_net

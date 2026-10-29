@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator, MaxLengthValidator
 
 class TaskStatus(models.TextChoices):
@@ -7,6 +8,13 @@ class TaskStatus(models.TextChoices):
     DONE = 'DONE', 'DONE'
 
 class Task(models.Model):
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='tasks',
+        null=True,
+        blank=True
+    )
     title = models.CharField(
         max_length=100,
         validators=[MinLengthValidator(3), MaxLengthValidator(100)],

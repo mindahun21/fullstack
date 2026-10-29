@@ -1,5 +1,46 @@
 from rest_framework import serializers
+from django.contrib.auth.models import User
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import Task, TaskStatus
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'first_name', 'last_name')
+
+class RegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True, min_length=6)
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'password', 'first_name')
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            username=validated_data.get('username') or validated_data.get('email'),
+            email=validated_data.get('email', ''),
+            password=validated_data['password'],
+            first_name=validated_data.get('first_name', '')
+        )
+        return user
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        username_or_email = attrs.get('username')
+        if '@' in username_or_email:
+            user = User.objects.filter(email=username_or_email).first()
+            if user:
+                attrs['username'] = user.username
+
+        data = super().validate(attrs)
+        data['token'] = data['access']
+        data['user'] = {
+            'id': self.user.id,
+            'email': self.user.email,
+            'username': self.user.username,
+            'name': self.user.first_name or self.user.username,
+        }
+        return data
 
 class TaskSerializer(serializers.ModelSerializer):
     title = serializers.CharField(
@@ -32,11 +73,10 @@ class TaskSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Task
-        fields = ('id', 'title', 'description', 'status', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'created_at', 'updated_at')
+        fields = ('id', 'title', 'description', 'status', 'created_at', 'updated_at', 'owner')
+        read_only_fields = ('id', 'created_at', 'updated_at', 'owner')
 
     def create(self, validated_data):
-        # Default the status to TODO when omitted on creation
         if 'status' not in validated_data or not validated_data['status']:
             validated_data['status'] = TaskStatus.TODO
         return super().create(validated_data)

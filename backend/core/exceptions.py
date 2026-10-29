@@ -3,13 +3,12 @@ from rest_framework import status
 
 def custom_exception_handler(exc, context):
     """
-    Returns a consistent JSON error body:
+    Returns a consistent JSON error body format:
     {
         "status": <http_status_code>,
         "message": "<human_readable_message>",
         "errors": <optional_field_errors>
     }
-    as specified in Safaricom Candidate Technical Assessment.
     """
     response = exception_handler(exc, context)
 
@@ -17,7 +16,6 @@ def custom_exception_handler(exc, context):
         status_code = response.status_code
         error_data = response.data
 
-        # Determine human-friendly error message
         if status_code == status.HTTP_404_NOT_FOUND:
             message = "Resource not found."
         elif status_code == status.HTTP_400_BAD_REQUEST:
